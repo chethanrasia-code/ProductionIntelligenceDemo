@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ProductionIntelligence.Api/ProductionIntelligence.Api.csproj" />
+    <Project Path="src/ProductionIntelligence.Application/ProductionIntelligence.Application.csproj" />
+    <Project Path="src/ProductionIntelligence.Contracts/ProductionIntelligence.Contracts.csproj" />
+    <Project Path="src/ProductionIntelligence.Domain/ProductionIntelligence.Domain.csproj" />
+    <Project Path="src/ProductionIntelligence.Infrastructure/ProductionIntelligence.Infrastructure.csproj" />
+    <Project Path="src/ProductionIntelligence.Simulator/ProductionIntelligence.Simulator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ProductionIntelligence.Tests/ProductionIntelligence.Tests.csproj" />
+  </Folder>
+</Solution>

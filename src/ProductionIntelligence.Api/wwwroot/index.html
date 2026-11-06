@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Efficiency Intelligence</title>
+  <style>
+    :root { color-scheme: light; font-family: Segoe UI, sans-serif; color: #17212b; background: #f3f6f8; }
+    body { max-width: 960px; margin: 36px auto; padding: 0 20px; }
+    h1 { margin-bottom: 4px; }
+    .muted { color: #586777; }
+    .card { background: white; border: 1px solid #dce3e8; border-radius: 10px; padding: 18px; margin: 16px 0; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+    label { display: grid; gap: 6px; font-weight: 600; }
+    input { min-width: 320px; padding: 9px; border: 1px solid #aebac4; border-radius: 5px; }
+    button, a.button { padding: 10px 14px; border: 0; border-radius: 5px; background: #145da0; color: white; cursor: pointer; text-decoration: none; }
+    pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .links a { margin-right: 14px; }
+    #lines { white-space: pre-line; }
+    #error { color: #a32121; }
+  </style>
+</head>
+<body>
+  <h1>Production Efficiency Intelligence</h1>
+  <p class="muted">Synthetic manufacturing data · API-calculated OEE · AI insight for human review</p>
+  <section class="card">
+    <h2>Lines</h2>
+    <div id="lines">Loading lines…</div>
+  </section>
+  <section class="card">
+    <h2>Inspect a simulated shift</h2>
+    <p>Run the simulator in a terminal and paste the printed shift ID below.</p>
+    <div class="row">
+      <label>Shift ID
+        <input id="shiftId" placeholder="GUID printed by the simulator">
+      </label>
+      <button onclick="loadResults()">Load OEE, losses, events, and insight</button>
+    </div>
+    <p id="error" role="alert"></p>
+    <div class="links" id="apiLinks"></div>
+  </section>
+  <section class="card"><h2>OEE</h2><pre id="oee">No shift loaded.</pre></section>
+  <section class="card"><h2>Losses</h2><pre id="losses">No shift loaded.</pre></section>
+  <section class="card"><h2>Events</h2><pre id="events">No shift loaded.</pre></section>
+  <section class="card"><h2>AI insight</h2><pre id="insight">No shift loaded.</pre></section>
+  <script>
+    const pretty = value => JSON.stringify(value, null, 2);
+    async function getJson(url, options) {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+      return data;
+    }
+    async function loadLines() {
+      try {
+        const lines = await getJson("/api/lines");
+        document.querySelector("#lines").textContent = lines
+          .map(line => `${line.name} (${line.id}) — ideal cycle ${line.idealCycleTimeSeconds}s`)
+          .join("\n");
+      } catch (error) {
+        document.querySelector("#lines").textContent = error.message;
+      }
+    }
+    async function loadResults() {
+      const id = document.querySelector("#shiftId").value.trim();
+      const error = document.querySelector("#error");
+      error.textContent = "";
+      if (!id) { error.textContent = "Enter the shift ID printed by the simulator."; return; }
+      const path = `/api/shifts/${encodeURIComponent(id)}`;
+      document.querySelector("#apiLinks").innerHTML =
+        `<a href="${path}/oee" target="_blank">OEE API</a>` +
+        `<a href="${path}/losses" target="_blank">Losses API</a>` +
+        `<a href="${path}/events" target="_blank">Events API</a>`;
+      try {
+        const [oee, losses, events] = await Promise.all([
+          getJson(`${path}/oee`), getJson(`${path}/losses`), getJson(`${path}/events`)
+        ]);
+        document.querySelector("#oee").textContent = pretty(oee);
+        document.querySelector("#losses").textContent = pretty(losses);
+        document.querySelector("#events").textContent = pretty(events);
+        document.querySelector("#insight").textContent = "Generating…";
+        const insight = await getJson(`${path}/insights`, { method: "POST" });
+        document.querySelector("#insight").textContent = pretty(insight);
+      } catch (exception) {
+        error.textContent = exception.message;
+        document.querySelector("#insight").textContent = "Insight was not generated.";
+      }
+    }
+    loadLines();
+  </script>
+</body>
+</html>
